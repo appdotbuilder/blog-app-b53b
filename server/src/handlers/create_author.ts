@@ -1,11 +1,22 @@
+import { db } from '../db';
+import { authorsTable } from '../db/schema';
 import { type CreateAuthorInput, type Author } from '../schema';
 
-export async function createAuthor(input: CreateAuthorInput): Promise<Author> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new author and persisting it in the database.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
-        name: input.name,
-        created_at: new Date() // Placeholder date
-    } as Author);
-}
+export const createAuthor = async (input: CreateAuthorInput): Promise<Author> => {
+  try {
+    // Insert author record
+    const result = await db.insert(authorsTable)
+      .values({
+        name: input.name
+      })
+      .returning()
+      .execute();
+
+    // Return the created author
+    const author = result[0];
+    return author;
+  } catch (error) {
+    console.error('Author creation failed:', error);
+    throw error;
+  }
+};

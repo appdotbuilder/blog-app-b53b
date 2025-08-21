@@ -1,15 +1,33 @@
+import { db } from '../db';
+import { postsTable, authorsTable } from '../db/schema';
 import { type CreatePostInput, type Post } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function createPost(input: CreatePostInput): Promise<Post> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new blog post and persisting it in the database.
-    // Should validate that the author_id exists before creating the post.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createPost = async (input: CreatePostInput): Promise<Post> => {
+  try {
+    // First, validate that the author exists
+    const existingAuthor = await db.select()
+      .from(authorsTable)
+      .where(eq(authorsTable.id, input.author_id))
+      .execute();
+
+    if (existingAuthor.length === 0) {
+      throw new Error(`Author with id ${input.author_id} not found`);
+    }
+
+    // Insert post record
+    const result = await db.insert(postsTable)
+      .values({
         title: input.title,
         content: input.content,
-        author_id: input.author_id,
-        created_at: new Date(), // Placeholder date
-        updated_at: new Date() // Placeholder date
-    } as Post);
-}
+        author_id: input.author_id
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Post creation failed:', error);
+    throw error;
+  }
+};
